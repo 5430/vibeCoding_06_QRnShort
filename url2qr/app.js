@@ -102,6 +102,18 @@ document.addEventListener('DOMContentLoaded', () => {
     targetUrlLabel.textContent = url;
     targetUrlLabel.title = url;
 
+    // 한글 및 비ASCII 문자가 포함된 URL의 경우 웹 표준(RFC 3986)에 맞게 퍼센트 인코딩 적용
+    // (QRCode.js는 비ASCII 문자 감지 시 데이터 앞에 UTF-8 BOM[0xEF, 0xBB, 0xBF]을 강제 삽입하여
+    //  스마트폰 카메라/스캐너가 웹 링크가 아닌 일반 텍스트로 인식하거나 링크가 열리지 않는 문제 해결)
+    let qrPayload = url;
+    if (/^https?:\/\//i.test(url)) {
+      try {
+        qrPayload = encodeURI(decodeURI(url));
+      } catch (e) {
+        qrPayload = encodeURI(url);
+      }
+    }
+
     // 기존 캔버스 박스 비우기
     qrCanvasBox.innerHTML = '';
 
@@ -109,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof QRCode !== 'undefined') {
         // QRCodejs 라이브러리를 통한 QR 코드 생성
         qrCodeInstance = new QRCode(qrCanvasBox, {
-          text: url,
+          text: qrPayload,
           width: 256,
           height: 256,
           colorDark: '#1e1b18',
@@ -119,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         // Fallback: QRCode 라이브러리가 로드되지 않은 경우 Image Fallback
         const img = document.createElement('img');
-        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(url)}`;
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrPayload)}`;
         img.alt = 'QR Code';
         img.crossOrigin = 'Anonymous';
         qrCanvasBox.appendChild(img);
