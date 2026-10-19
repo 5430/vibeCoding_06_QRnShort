@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Toolkit Studio - QR코드 & URL단축 올인원 허브</title>
+  <meta name="description" content="QR코드 생성과 고속 OpenAPI URL 단축 기능을 하나의 웹 앱에서 제공하는 스마트 링크 툴킷">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+      --bg-base: #fbfbfa;
+      --card-bg: rgba(255, 255, 255, 0.90);
+      --card-border: rgba(245, 158, 11, 0.18);
+      --brand-amber: #d97706;
+      --brand-orange: #ea580c;
+      --brand-dark: #1e1b18;
+      --text-primary: #1e293b;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --font-family: 'Plus Jakarta Sans', 'Pretendard', -apple-system, sans-serif;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-family);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Interactive Aurora Background */
+    .interactive-bg-wrapper {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+      background: radial-gradient(
+        circle at var(--mouse-x) var(--mouse-y),
+        rgba(254, 240, 138, 0.45) 0%,
+        rgba(254, 215, 170, 0.35) 25%,
+        rgba(255, 237, 213, 0.2) 50%,
+        rgba(251, 251, 250, 0.95) 80%
+      );
+    }
+
+    .aurora-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.55;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .blob-1 {
+      width: 600px; height: 600px; top: -100px; left: -100px;
+      background: radial-gradient(circle, #fde047 20%, #fb923c 70%, transparent 90%);
+      animation: float1 18s infinite alternate ease-in-out;
+    }
+
+    .blob-2 {
+      width: 700px; height: 700px; bottom: -150px; right: -100px;
+      background: radial-gradient(circle, #fbbf24 15%, #ea580c 65%, transparent 85%);
+      animation: float2 22s infinite alternate ease-in-out;
+    }
+
+    @keyframes float1 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 60px) scale(1.08); }
+    }
+    @keyframes float2 {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(-50px, -40px) scale(1.1); }
+    }
+
+    /* Header */
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      background: rgba(251, 251, 250, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .logo-badge-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f59e0b, #ea580c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .logo-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--brand-dark);
+      letter-spacing: -0.03em;
+    }
+
+    .nav-button-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(241, 245, 249, 0.85);
+      padding: 0.3rem;
+      border-radius: var(--radius-full);
+      border: 1px solid rgba(203, 213, 225, 0.6);
+    }
+
+    .nav-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 1rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: var(--radius-full);
+      transition: all 0.2s ease-out;
+    }
+
+    .nav-tab-btn:hover {
+      background: #ffffff;
+      color: var(--brand-dark);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Hero */
+    .main-container {
+      flex: 1;
+      position: relative;
+      z-index: 10;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3rem;
+      width: 100%;
+    }
+
+    .hero-section {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      max-width: 720px;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.4rem 1rem;
+      border-radius: var(--radius-full);
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: var(--brand-amber);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.2;
+      color: var(--brand-dark);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Hub Cards Grid */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+      width: 100%;
+    }
+
+    .tool-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      border: 1.5px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 15px 35px rgba(245, 158, 11, 0.08), 0 5px 15px rgba(0, 0, 0, 0.04);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tool-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #f59e0b, #ea580c);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tool-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(245, 158, 11, 0.5);
+      box-shadow: 0 25px 50px rgba(217, 119, 6, 0.16), 0 10px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .tool-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-icon-box {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #fef3c7, #fed7aa);
+      color: var(--brand-amber);
+      box-shadow: 0 8px 16px rgba(245, 158, 11, 0.15);
+    }
+
+    .card-title {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--brand-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-arrow {
+      width: 24px;
+      height: 24px;
+      transition: transform 0.25s ease;
+      color: var(--brand-amber);
+    }
+
+    .tool-card:hover .card-arrow {
+      transform: translateX(4px);
+    }
+
+    .card-desc {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-full);
+      background: rgba(241, 245, 249, 0.8);
+      color: var(--text-muted);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .card-button {
+      margin-top: 0.5rem;
+      padding: 0.9rem 1.5rem;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 6px 16px rgba(234, 88, 12, 0.25);
+    }
+
+    /* Footer */
+    .app-footer {
+      width: 100%;
+      padding: 2rem 1.5rem;
+      border-top: 1px solid rgba(226, 232, 240, 0.7);
+      background: rgba(251, 251, 250, 0.8);
+      position: relative;
+      z-index: 10;
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .tools-grid { grid-template-columns: 1fr; }
+      .hero-title { font-size: 2.2rem; }
+      .main-container { padding: 2rem 1rem; }
+      .header-inner { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Gradient -->
+  <div class="interactive-bg-wrapper">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-container">
+        <div class="logo-badge-icon">
+          <i data-lucide="layers" style="width:20px;height:20px;"></i>
+        </div>
+        <span class="logo-title">URL Toolkit Studio</span>
+      </a>
+
+      <!-- 1. 'QR코드' 버튼과 'URL단축' 버튼 추가 -->
+      <nav class="nav-button-group" aria-label="메인 메뉴">
+        <!-- 2. 'QR코드' 버튼 클릭 시 [url2qr]폴더 index.html 연결 -->
+        <a href="url2qr/index.html" class="nav-tab-btn" id="btn-nav-qr" title="QR코드 생성기로 이동">
+          <i data-lucide="qr-code" style="width:16px;height:16px;"></i>
+          <span>QR코드</span>
+        </a>
+        <!-- 3. 'URL단축' 버튼 클릭 시 [urlShort]폴더 index.html 연결 -->
+        <a href="urlShort/index.html" class="nav-tab-btn" id="btn-nav-short" title="URL 단축 서비스로 이동">
+          <i data-lucide="scissors" style="width:16px;height:16px;"></i>
+          <span>URL단축</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Hero & Feature Cards -->
+  <main class="main-container">
+    <div class="hero-section">
+      <div class="hero-pill">
+        <i data-lucide="sparkles" style="width:14px;height:14px;"></i>
+        <span>All-in-One Link Studio</span>
+      </div>
+      <h1 class="hero-title">링크를 더 스마트하게,<br><span class="gradient-text">QR코드 생성 & URL 단축</span></h1>
+      <p class="hero-subtitle">필요한 기능을 선택하여 즉시 시작하세요. 번거로운 가입 없이 강력한 웹 도구를 무료로 제공합니다.</p>
+    </div>
+
+    <!-- 2대 핵심 도구 선택 카드 그리드 -->
+    <div class="tools-grid">
+      <!-- 2. QR코드 기능 카드 -->
+      <a href="url2qr/index.html" class="tool-card" id="card-qr">
+        <div class="card-icon-box">
+          <i data-lucide="qr-code" style="width:30px;height:30px;"></i>
+        </div>
+        <h2 class="card-title">
+          <span>QR코드 생성기</span>
+          <i data-lucide="arrow-right" class="card-arrow"></i>
+        </h2>
+        <p class="card-desc">웹사이트 주소나 텍스트를 고화질 QR코드로 실시간 변환하고, 800x800 선명한 JPG 파일로 즉시 다운로드할 수 있습니다.</p>
+        <div class="card-tags">
+          <span class="tag">#원클릭 JPG 다운로드</span>
+          <span class="tag">#실시간 렌더링</span>
+          <span class="tag">#URL 복사</span>
+        </div>
+        <div class="card-button">
+          <span>QR코드 만들기 시작</span>
+          <i data-lucide="sparkle" style="width:16px;height:16px;"></i>
+        </div>
+      </a>
+
+      <!-- 3. URL 단축 기능 카드 -->
+      <a href="urlShort/index.html" class="tool-card" id="card-short">
+        <div class="card-icon-box">
+          <i data-lucide="scissors" style="width:30px;height:30px;"></i>
+        </div>
+        <h2 class="card-title">
+          <span>URL 단축기</span>
+          <i data-lucide="arrow-right" class="card-arrow"></i>
+        </h2>
+        <p class="card-desc">글로벌 OpenAPI와 연동하여 긴 URL을 단 1초 만에 깔끔한 단축 링크로 변환하고 클릭 한 번으로 자동 복사합니다.</p>
+        <div class="card-tags">
+          <span class="tag">#OpenAPI 연동</span>
+          <span class="tag">#원클릭 자동 복사</span>
+          <span class="tag">#QR코드 바로 연계</span>
+        </div>
+        <div class="card-button">
+          <span>URL 단축하기 시작</span>
+          <i data-lucide="zap" style="width:16px;height:16px;"></i>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>© 2026 URL Toolkit Studio. All rights reserved.</p>
+      <div>
+        <span>QR Code & URL Shortener Solution</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+    // 마우스 반응형 인터랙션
+    window.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      document.documentElement.style.setProperty('--mouse-x', `${x.toFixed(2)}%`);
+      document.documentElement.style.setProperty('--mouse-y', `${y.toFixed(2)}%`);
+    });
+  </script>
+</body>
+</html>

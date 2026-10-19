@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener - 스마트한 URL 단축 서비스</title>
+  <meta name="description" content="긴 URL 주소를 빠르고 간편하게 짧은 링크로 단축하고 관리할 수 있는 OpenAPI 기반 웹 도구">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body class="state-idle">
+  <!-- 마우스 반응형 다이내믹 오로라 그라데이션 배경 -->
+  <div class="interactive-bg-wrapper" id="interactive-bg">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+    <div class="mouse-follower-glow" id="mouse-glow"></div>
+  </div>
+  <div class="subtle-pattern-overlay"></div>
+
+  <!-- 상단 통합 헤더 & 네비게이션 -->
+  <header class="app-header">
+    <div class="header-inner">
+      <a href="../index.html" class="logo-container" title="메인 홈으로 이동">
+        <div class="logo-icon-wrapper">
+          <i data-lucide="scissors" class="logo-svg"></i>
+        </div>
+        <div class="logo-text-group">
+          <span class="logo-title">URL<span class="highlight">Short</span></span>
+          <span class="logo-badge">FAST API</span>
+        </div>
+      </a>
+
+      <!-- 공통 상단 네비게이션 버튼 그룹 -->
+      <nav class="nav-button-group" aria-label="메인 메뉴">
+        <a href="../url2qr/index.html" class="nav-tab-btn" id="nav-btn-qr" title="QR코드 생성기로 이동">
+          <i data-lucide="qr-code" class="tab-icon"></i>
+          <span>QR코드</span>
+        </a>
+        <a href="index.html" class="nav-tab-btn active" id="nav-btn-short" aria-current="page" title="URL 단축기">
+          <i data-lucide="link" class="tab-icon"></i>
+          <span>URL단축</span>
+        </a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span>API Connected</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 컨테이너 -->
+  <main class="main-container">
+    <div class="shortener-wrapper">
+
+      <!-- 인트로 헤더 텍스트 -->
+      <header class="shortener-header">
+        <div class="header-pill">
+          <i data-lucide="sparkles" class="pill-icon"></i>
+          <span>OpenAPI Lightning Fast Shortener</span>
+        </div>
+        <h1 class="main-title">간편하고 스마트한 <span class="gradient-text">URL 단축</span></h1>
+        <p class="sub-title">복잡하고 긴 링크 주소를 입력하면 단 1초 만에 깔끔한 단축 URL로 변환해 드립니다.</p>
+      </header>
+
+      <!-- URL 입력 및 컨트롤 카드 -->
+      <section class="shortener-card" aria-label="URL 단축 입력 영역">
+        <form class="url-input-form" id="shorten-form" onsubmit="return false;">
+          <div class="input-field-group">
+            <label for="url-input" class="visually-hidden">단축할 URL 입력</label>
+            <div class="input-box-wrapper" id="input-box-wrapper">
+              <div class="input-icon-prefix">
+                <i data-lucide="globe" class="field-icon"></i>
+              </div>
+              <!-- 3-1. URL 입력창 -->
+              <input 
+                type="text" 
+                id="url-input" 
+                class="url-input-field" 
+                placeholder="단축할 URL을 입력하세요 (예: naver.com 또는 https://example.com/...)" 
+                autocomplete="off"
+                spellcheck="false"
+                required
+              >
+              <!-- 인풋 비우기 버튼 -->
+              <button type="button" class="btn-clear-input" id="btn-clear-input" style="display: none;" title="입력 내용 지우기">
+                <i data-lucide="x" class="clear-svg"></i>
+              </button>
+            </div>
+
+            <!-- 3-1, 3-2. 단축하기 버튼 (입력 필드가 비어 있으면 비활성화 disabled) -->
+            <button type="submit" class="btn-shorten" id="btn-shorten" disabled title="URL을 단축합니다">
+              <span class="btn-content">
+                <i data-lucide="scissors" class="btn-icon"></i>
+                <span class="btn-text">단축하기</span>
+              </span>
+              <span class="btn-loader" style="display: none;">
+                <span class="spinner"></span>
+                <span>단축 중...</span>
+              </span>
+            </button>
+          </div>
+        </form>
+
+        <!-- API 프로바이더 선택 및 옵션 (보조 기능) -->
+        <div class="api-options-bar">
+          <div class="api-select-group">
+            <label for="api-provider" class="api-label">
+              <i data-lucide="server" class="api-label-icon"></i>
+              <span>OpenAPI 엔진:</span>
+            </label>
+            <select id="api-provider" class="api-select" title="URL 단축에 사용할 OpenAPI를 선택합니다">
+              <option value="auto" selected>⚡ 자동 최적화 (Auto Failover)</option>
+              <option value="dagd">da.gd (글로벌 고속 OpenAPI)</option>
+              <option value="isgd">is.gd (글로벌 OpenAPI)</option>
+              <option value="vgd">v.gd (보안 검증 OpenAPI)</option>
+              <option value="tinyurl">TinyURL (클래식 단축 엔진)</option>
+            </select>
+          </div>
+          <div class="api-feature-tag">
+            <i data-lucide="shield-check" class="tag-icon"></i>
+            <span>HTTPS 보안 암호화 지원</span>
+          </div>
+        </div>
+
+        <!-- 3-1. 읽기 전용 출력 상자 및 복사 영역 -->
+        <section class="result-section" id="result-section">
+          <div class="result-divider">
+            <span class="divider-line"></span>
+            <span class="divider-badge"><i data-lucide="check" class="badge-check-icon"></i> 단축 결과</span>
+            <span class="divider-line"></span>
+          </div>
+
+          <div class="result-card" id="result-card">
+            <div class="result-header">
+              <span class="result-label">단축된 링크 주소</span>
+              <span class="char-saving-badge" id="char-saving-badge">길이 0% 감소</span>
+            </div>
+
+            <div class="result-field-wrapper">
+              <!-- 3-1. 읽기 전용 출력 상자 (Readonly Output Field) -->
+              <div class="readonly-box-container">
+                <i data-lucide="link-2" class="output-icon"></i>
+                <input 
+                  type="text" 
+                  id="shortened-output" 
+                  class="readonly-output-input" 
+                  readonly 
+                  placeholder="단축하기 버튼을 누르면 여기에 단축 URL이 표시됩니다." 
+                  value=""
+                  title="단축된 URL (읽기 전용)"
+                >
+              </div>
+
+              <!-- 3-4. 복사 버튼 -->
+              <button type="button" class="btn-copy" id="btn-copy" disabled title="단축된 링크를 클립보드에 복사">
+                <i data-lucide="copy" class="btn-copy-icon"></i>
+                <span id="copy-btn-text">복사</span>
+              </button>
+            </div>
+
+            <!-- 결과 부가 액션 (QR코드 연계 및 브라우저 열기) -->
+            <div class="result-actions" id="result-actions">
+              <a href="#" class="action-chip" id="action-open-link" target="_blank" rel="noopener noreferrer" title="새 탭에서 열기">
+                <i data-lucide="external-link" class="chip-icon"></i>
+                <span>새 탭에서 열기</span>
+              </a>
+              <button type="button" class="action-chip" id="action-to-qr" title="단축된 링크로 QR코드 바로 생성">
+                <i data-lucide="qr-code" class="chip-icon"></i>
+                <span>이 링크로 QR코드 만들기</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <!-- 최근 단축 기록 (히스토리) 섹션 -->
+      <section class="history-section" id="history-section" style="display: none;">
+        <div class="history-header">
+          <div class="history-title-group">
+            <i data-lucide="clock" class="history-icon"></i>
+            <h2 class="history-title">최근 단축 기록</h2>
+          </div>
+          <button type="button" class="btn-clear-history" id="btn-clear-history" title="기록 전체 삭제">
+            <i data-lucide="trash-2" class="trash-icon"></i>
+            <span>기록 비우기</span>
+          </button>
+        </div>
+        <div class="history-list" id="history-list">
+          <!-- JS로 동적 렌더링 -->
+        </div>
+      </section>
+
+      <!-- 기능 안내 카드 그리드 -->
+      <section class="feature-grid" aria-label="주요 장점">
+        <div class="feature-item">
+          <div class="feature-icon-box bg-amber">
+            <i data-lucide="zap" class="feature-icon"></i>
+          </div>
+          <h3 class="feature-title">초고속 OpenAPI 연동</h3>
+          <p class="feature-desc">별도 로그인 없이 즉시 OpenAPI를 호출하여 몇 밀리초 만에 짧은 URL을 생성합니다.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon-box bg-orange">
+            <i data-lucide="copy-check" class="feature-icon"></i>
+          </div>
+          <h3 class="feature-title">스마트 원클릭 복사</h3>
+          <p class="feature-desc">단축된 URL을 클릭 한 번으로 안전하게 클립보드에 복사하고 알림으로 확인합니다.</p>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon-box bg-gold">
+            <i data-lucide="qr-code" class="feature-icon"></i>
+          </div>
+          <h3 class="feature-title">QR코드 도구와 연계</h3>
+          <p class="feature-desc">단축된 링크를 바로 QR코드 생성기로 전송하여 고화질 QR 이미지로 다운로드할 수 있습니다.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- 하단 푸터 -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>© 2026 URL Toolkit Studio. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="../url2qr/index.html">QR코드 생성기</a>
+        <span class="footer-sep">•</span>
+        <a href="index.html">URL 단축 서비스</a>
+        <span class="footer-sep">•</span>
+        <a href="../index.html">메인 허브</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- 스크립트 로드 -->
+  <script src="app.js"></script>
+  <script>
+    // Lucide 아이콘 렌더링
+    lucide.createIcons();
+  </script>
+</body>
+</html>

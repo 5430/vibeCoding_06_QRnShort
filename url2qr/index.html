@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL2QR - 스마트한 QR코드 생성기</title>
+  <meta name="description" content="URL을 입력하여 손쉽게 QR코드를 생성하고 고화질 JPG로 다운로드할 수 있는 웹 서비스">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- QRCode Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body class="state-initial">
+  <!-- 마우스 반응형 다이내믹 그라데이션 배경 -->
+  <div class="interactive-bg-wrapper" id="interactive-bg">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+    <div class="mouse-follower-glow" id="mouse-glow"></div>
+  </div>
+  <div class="subtle-pattern-overlay"></div>
+
+  <!-- 상단 헤더 -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="logo-container" id="logo-refresh-btn" title="새로고침 / 처음으로">
+        <img src="img/logo.png" alt="URL2QR Logo" class="app-logo" id="app-logo">
+        <div class="logo-text-group">
+          <span class="logo-title">URL2QR</span>
+          <span class="logo-badge">STUDIO</span>
+        </div>
+      </div>
+      
+      <!-- 공통 상단 네비게이션 버튼 그룹 -->
+      <nav class="nav-button-group" aria-label="메인 메뉴">
+        <a href="index.html" class="nav-tab-btn active" id="nav-btn-qr" aria-current="page" title="QR코드 생성기">
+          <i data-lucide="qr-code" class="tab-icon"></i>
+          <span>QR코드</span>
+        </a>
+        <a href="../urlShort/index.html" class="nav-tab-btn" id="nav-btn-short" title="URL 단축 서비스로 이동">
+          <i data-lucide="scissors" class="tab-icon"></i>
+          <span>URL단축</span>
+        </a>
+      </nav>
+
+      <div class="header-actions">
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span>Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 메인 영역 -->
+  <main class="main-container">
+
+    <!-- QR 결과 영역 (상태에 따라 중앙에 등장) -->
+    <section class="qr-display-section" id="qr-display-section">
+      <div class="qr-card-wrapper">
+        <div class="qr-glow-layer"></div>
+        <div class="qr-card" id="qr-card" title="클릭하면 고화질 JPG로 다운로드됩니다">
+          <div class="qr-badge">
+            <i data-lucide="download" class="badge-icon"></i>
+            <span>클릭하여 JPG 다운로드</span>
+          </div>
+
+          <div class="qr-canvas-box" id="qr-canvas-box">
+            <!-- QR 코드가 여기에 렌더링됩니다 -->
+          </div>
+
+          <div class="qr-hover-overlay">
+            <div class="overlay-content">
+              <i data-lucide="arrow-down-to-line" class="overlay-icon"></i>
+              <span class="overlay-text">JPG 저장하기</span>
+              <span class="overlay-subtext">800x800 고화질</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 생성된 URL 미리보기 및 보조 컨트롤 -->
+      <div class="qr-meta-info" id="qr-meta-info">
+        <p class="target-url-label" id="target-url-label">https://example.com</p>
+        <div class="action-btn-group">
+          <button class="btn btn-secondary" id="btn-copy-url" title="URL 복사">
+            <i data-lucide="copy" class="btn-icon"></i>
+            <span>URL 복사</span>
+          </button>
+          <button class="btn btn-primary" id="btn-download-jpg" title="JPG 파일 다운로드">
+            <i data-lucide="download" class="btn-icon"></i>
+            <span>JPG 다운로드</span>
+          </button>
+          <button class="btn btn-outline" id="btn-reset" title="새 QR 만들기">
+            <i data-lucide="refresh-cw" class="btn-icon"></i>
+            <span>새로 만들기</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 입력창 영역 (초기에는 중앙, 생성 후 하단으로 이동) -->
+    <section class="input-section" id="input-section">
+      <div class="input-card">
+        <div class="input-header-text">
+          <div class="header-pill">
+            <i data-lucide="sparkles" class="pill-icon"></i>
+            <span>Fast & Clean QR Generator</span>
+          </div>
+          <h1 class="main-title">쉽고 빠른 QR코드 생성</h1>
+          <p class="sub-title">변환할 웹사이트 주소나 텍스트를 입력해 보세요.</p>
+        </div>
+
+        <form class="url-input-form" id="url-form" onsubmit="return false;">
+          <div class="input-field-container">
+            <div class="input-icon-wrapper">
+              <i data-lucide="link-2" class="input-icon"></i>
+            </div>
+            <input 
+              type="text" 
+              id="url-input" 
+              class="url-input" 
+              placeholder="https://example.com 또는 텍스트 입력..." 
+              autocomplete="off"
+              spellcheck="false"
+              required
+            >
+            <button type="button" class="clear-input-btn" id="clear-input-btn" style="display: none;" title="입력 지우기">
+              <i data-lucide="x" class="clear-icon"></i>
+            </button>
+            <button type="submit" class="submit-btn" id="submit-btn">
+              <span class="btn-text">생성하기</span>
+              <i data-lucide="arrow-right" class="submit-icon"></i>
+            </button>
+          </div>
+        </form>
+
+        <div class="input-footer-hint">
+          <span class="hint-item"><i data-lucide="check-circle-2" class="hint-icon"></i> 원클릭 고해상도 JPG 다운로드</span>
+          <span class="hint-dot">•</span>
+          <span class="hint-item"><i data-lucide="zap" class="hint-icon"></i> 실시간 즉시 렌더링</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 토스트 알림 메시지 -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+  <script>
+    // Lucide 아이콘 초기화
+    lucide.createIcons();
+  </script>
+</body>
+</html>
